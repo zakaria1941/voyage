@@ -1,0 +1,149 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────
+// Voyago Firestore security rules
+//
+// Design summary (see README "Security" for the full write-up):
+//  - Inventory collections (airports/airlines/flights/hotels/rooms/cars/
+//    carSuppliers/transfers) are publicly READABLE, but only admins may
+//    write to them. Prices and availability can never be edited by a
+//    regular client.
+//  - Bookings are never created or cancelled directly by clients (`allow
+//    create: if false`; `allow update: if isAdmin()` only). Creation and
+//    cancellation both go through Netlify Functions (create-booking,
+//    cancel-booking) running with Admin SDK privileges (bypassing these
+//    rules entirely). Creation recomputes pricing from canonical inventory
+//    data and reserves inventory inside a transaction; cancellation
+//    restores a flight's reserved seats the same way. Neither can be
+//    expressed as a security rule — a rule can't recompute business
+//    pricing or atomically adjust a second document's counters.
+//  - Reviews use the source booking's id as the review document id, which
+//    turns "one review per completed booking" into something these rules
+//    can enforce for free (a duplicate is an update, not a create).
+// ─────────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function onlyFieldsChanged(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    // ---------------------------------------------------------------- users
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.role == 'user';
+      allow update: if isAdmin()
+        || (isOwner(userId) && onlyFieldsChanged(['firstName', 'lastName', 'phone', 'photoURL', 'photoPublicId', 'country', 'emailVerified', 'updatedAt']));
+      allow delete: if isAdmin();
+
+      match /favorites/{favoriteId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ---------------------------------------------------- public inventory
+    match /airports/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /airlines/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /flights/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /hotels/{hotelId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /rooms/{roomId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
+    match /cars/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /carSuppliers/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /transfers/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ------------------------------------------------------------ bookings
+    match /bookings/{bookingId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if false; // see file header — creation happens via the create-booking Function
+      // Cancellation (by owner or admin) also happens via a Function (cancel-booking), not a
+      // direct client write: flight cancellations must atomically restore the reserved seat
+      // count, which a security rule cannot do. Only non-cancel admin transitions (e.g.
+      // pending -> confirmed) are plain client writes, since those touch no inventory.
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------------- reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.bookingId == reviewId
+        && get(/databases/$(database)/documents/bookings/$(reviewId)).data.userId == request.auth.uid
+        && get(/databases/$(database)/documents/bookings/$(reviewId)).data.status == 'completed'
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow update, delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------------- coupons
+    match /coupons/{couponId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // -------------------------------------------------------- notifications
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+        || (isSignedIn() && resource.data.userId == request.auth.uid && onlyFieldsChanged(['read']));
+      allow delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------------- settings
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

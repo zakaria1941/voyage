@@ -1,0 +1,19 @@
+node_modules
+dist
+dist-ssr
+emulator-data/
+*.local
+.env
+.env.local
+.env.*.local
+firebase-debug.log
+firestore-debug.log
+pubsub-debug.log
+ui-debug.log
+.firebase/
+*.tsbuildinfo
+.DS_Store
+coverage
+
+# Local Netlify folder
+.netlify
