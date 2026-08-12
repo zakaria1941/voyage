@@ -9,6 +9,7 @@ import { useAsync } from '@/hooks/useAsync';
 import { listAllUsers, updateUserRole } from '@/services/userService';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { formatDateShort } from '@/utils/date';
 import type { UserProfile } from '@/types/user';
 import type { UserRole } from '@/types/common';
@@ -16,16 +17,17 @@ import type { UserRole } from '@/types/common';
 export default function AdminUsersPage() {
   const { profile: currentAdmin } = useAuth();
   const toast = useToast();
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const users = useAsync(listAllUsers, []);
 
   async function handleRoleChange(user: UserProfile, role: UserRole) {
     try {
       await updateUserRole(user.uid, role);
-      toast.success(`${user.firstName} is now ${role === 'admin' ? 'an admin' : 'a regular user'}`);
+      toast.success(t(role === 'admin' ? 'admin.users.roleChangedAdmin' : 'admin.users.roleChangedUser', { name: user.firstName }));
       users.refetch();
     } catch (error) {
-      toast.error('Couldn’t update role', error instanceof Error ? error.message : undefined);
+      toast.error(t('admin.users.roleUpdateError'), error instanceof Error ? error.message : undefined);
     }
   }
 
@@ -36,7 +38,7 @@ export default function AdminUsersPage() {
   const columns: Column<UserProfile>[] = [
     {
       key: 'user',
-      header: 'User',
+      header: t('admin.users.colUser'),
       render: (u) => (
         <div className="flex items-center gap-2.5">
           {u.photoURL ? <img src={u.photoURL} alt="" className="size-8 rounded-full object-cover" /> : <span className="flex size-8 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">{u.firstName[0]}{u.lastName[0]}</span>}
@@ -47,15 +49,15 @@ export default function AdminUsersPage() {
         </div>
       ),
     },
-    { key: 'country', header: 'Country', render: (u) => u.country ?? '—' },
-    { key: 'verified', header: 'Email', render: (u) => <Badge tone={u.emailVerified ? 'success' : 'neutral'}>{u.emailVerified ? 'Verified' : 'Unverified'}</Badge> },
-    { key: 'joined', header: 'Joined', render: (u) => formatDateShort(u.createdAt) },
-    { key: 'role', header: 'Role', render: (u) => <Badge tone={u.role === 'admin' ? 'brand' : 'neutral'} className="capitalize">{u.role === 'admin' && <ShieldCheck className="size-3" />}{u.role}</Badge> },
+    { key: 'country', header: t('admin.users.colCountry'), render: (u) => u.country ?? '—' },
+    { key: 'verified', header: t('admin.users.colEmail'), render: (u) => <Badge tone={u.emailVerified ? 'success' : 'neutral'}>{u.emailVerified ? t('admin.users.verified') : t('admin.users.unverified')}</Badge> },
+    { key: 'joined', header: t('admin.users.colJoined'), render: (u) => formatDateShort(u.createdAt) },
+    { key: 'role', header: t('admin.users.colRole'), render: (u) => <Badge tone={u.role === 'admin' ? 'brand' : 'neutral'} className="capitalize">{u.role === 'admin' && <ShieldCheck className="size-3" />}{u.role === 'admin' ? t('admin.users.roleAdmin') : t('admin.users.roleUser')}</Badge> },
   ];
 
   return (
     <div>
-      <AdminPageHeader title="Users" description="Everyone with a Voyago account." search={search} onSearchChange={setSearch} />
+      <AdminPageHeader title={t('admin.nav.users')} description={t('admin.users.subtitle')} search={search} onSearchChange={setSearch} />
       <DataTable
         columns={columns}
         rows={filtered}
@@ -67,10 +69,10 @@ export default function AdminUsersPage() {
             disabled={u.uid === currentAdmin?.uid}
             onChange={(e) => handleRoleChange(u, e.target.value as UserRole)}
             className="h-8 w-28 text-xs"
-            aria-label={`Change role for ${u.firstName}`}
+            aria-label={t('admin.users.changeRoleAriaLabel', { name: u.firstName })}
           >
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
+            <option value="user">{t('admin.users.roleUser')}</option>
+            <option value="admin">{t('admin.users.roleAdmin')}</option>
           </Select>
         )}
       />

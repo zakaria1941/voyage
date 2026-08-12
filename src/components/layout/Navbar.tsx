@@ -7,21 +7,24 @@ import { LanguageSelector } from './LanguageSelector';
 import { UserMenu } from './UserMenu';
 import { LinkButton } from '@/components/ui/LinkButton';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
+import type { TranslationKey } from '@/i18n';
 import { cn } from '@/utils/cn';
 
-const NAV_LINKS = [
-  { to: '/explore', label: 'Explore' },
-  { to: '/flights', label: 'Flights' },
-  { to: '/hotels', label: 'Hotels' },
-  { to: '/cars', label: 'Cars' },
-  { to: '/transfers', label: 'Transfers' },
-  { to: '/deals', label: 'Deals' },
-  { to: '/help', label: 'Help' },
+const NAV_LINKS: { to: string; key: TranslationKey }[] = [
+  { to: '/explore', key: 'nav.explore' },
+  { to: '/flights', key: 'nav.flights' },
+  { to: '/hotels', key: 'nav.hotels' },
+  { to: '/cars', key: 'nav.cars' },
+  { to: '/transfers', key: 'nav.transfers' },
+  { to: '/deals', key: 'nav.deals' },
+  { to: '/help', key: 'nav.help' },
 ];
 
 export function Navbar() {
   const { pathname } = useLocation();
   const { profile, loading } = useAuth();
+  const { t } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [lastPathname, setLastPathname] = useState(pathname);
@@ -67,7 +70,7 @@ export function Navbar() {
                     )
                   }
                 >
-                  {link.label}
+                  {t(link.key)}
                 </NavLink>
               </li>
             ))}
@@ -75,8 +78,8 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-1 lg:flex">
-          <LanguageSelector className={transparent ? 'text-white [&_svg]:text-white/80 [&_select]:text-white' : ''} />
-          <CurrencySelector className={transparent ? 'text-white [&_select]:text-white' : ''} />
+          <LanguageSelector dark={transparent} />
+          <CurrencySelector dark={transparent} />
           <div className={cn('mx-2 h-6 w-px', transparent ? 'bg-white/20' : 'bg-ink-200')} />
           {!loading && profile ? (
             <UserMenu dark={transparent} />
@@ -89,10 +92,10 @@ export function Navbar() {
                   transparent ? 'text-white hover:bg-white/10' : 'text-ink-700 hover:bg-ink-100',
                 )}
               >
-                Log in
+                {t('nav.login')}
               </Link>
               <LinkButton to="/register" size="sm">
-                Sign up
+                {t('nav.signup')}
               </LinkButton>
             </div>
           )}
@@ -101,7 +104,7 @@ export function Navbar() {
         <button
           type="button"
           className={cn('flex size-10 items-center justify-center rounded-xl lg:hidden', transparent ? 'text-white' : 'text-ink-700')}
-          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+          aria-label={mobileOpen ? t('nav.closeMenu') : t('nav.openMenu')}
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpen((v) => !v)}
         >
@@ -123,7 +126,7 @@ export function Navbar() {
                     )
                   }
                 >
-                  {link.label}
+                  {t(link.key)}
                 </NavLink>
               </li>
             ))}
@@ -136,9 +139,9 @@ export function Navbar() {
           {!loading && !profile && (
             <div className="mt-4 flex flex-col gap-2">
               <LinkButton to="/login" variant="outline">
-                Log in
+                {t('nav.login')}
               </LinkButton>
-              <LinkButton to="/register">Sign up</LinkButton>
+              <LinkButton to="/register">{t('nav.signup')}</LinkButton>
             </div>
           )}
         </div>

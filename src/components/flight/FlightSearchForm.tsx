@@ -4,8 +4,10 @@ import { ArrowLeftRight, PlaneTakeoff, PlaneLanding, CalendarDays, Search } from
 import { TripTypeSelector } from './TripTypeSelector';
 import { PassengersPopover } from '@/components/booking/PassengersPopover';
 import { Input } from '@/components/ui/Input';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { FormField } from '@/components/ui/FormField';
 import { Button } from '@/components/ui/Button';
+import { useLanguage } from '@/context/LanguageContext';
 import type { CabinClass, FlightSearchParams, PassengerCounts, TripType } from '@/types/search';
 import { addDaysISO, todayISO } from '@/utils/date';
 
@@ -17,6 +19,7 @@ interface FlightSearchFormProps {
 
 export function FlightSearchForm({ initial, onSearch, compact }: FlightSearchFormProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [tripType, setTripType] = useState<TripType>(initial?.tripType ?? 'roundtrip');
   const [origin, setOrigin] = useState(initial?.origin ?? '');
   const [destination, setDestination] = useState(initial?.destination ?? '');
@@ -38,15 +41,15 @@ export function FlightSearchForm({ initial, onSearch, compact }: FlightSearchFor
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!origin.trim() || !destination.trim()) {
-      setError('Please enter both a departure and destination city or airport.');
+      setError(t('search.flights.errorMissingCities'));
       return;
     }
     if (origin.trim().toLowerCase() === destination.trim().toLowerCase()) {
-      setError('Departure and destination can’t be the same.');
+      setError(t('search.flights.errorSameCity'));
       return;
     }
     if (tripType === 'roundtrip' && returnDate < departureDate) {
-      setError('Your return date can’t be before your departure date.');
+      setError(t('search.flights.errorReturnBeforeDeparture'));
       return;
     }
     setError(null);
@@ -96,11 +99,11 @@ export function FlightSearchForm({ initial, onSearch, compact }: FlightSearchFor
             : 'lg:grid-cols-[1.1fr_auto_1.1fr_0.9fr_0.9fr_1.2fr_auto]')
         }
       >
-        <FormField label="From" htmlFor="flight-origin">
+        <FormField label={t('search.flights.from')} htmlFor="flight-origin">
           <Input
             id="flight-origin"
             icon={<PlaneTakeoff className="size-4" />}
-            placeholder="City or airport"
+            placeholder={t('search.placeholder.cityOrAirport')}
             value={origin}
             onChange={(e) => setOrigin(e.target.value)}
             autoComplete="off"
@@ -112,64 +115,60 @@ export function FlightSearchForm({ initial, onSearch, compact }: FlightSearchFor
           <button
             type="button"
             onClick={swap}
-            aria-label="Swap origin and destination"
+            aria-label={t('search.flights.swapAriaLabel')}
             className="flex size-10 shrink-0 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-500 transition-all hover:border-brand-400 hover:text-brand-700 hover:rotate-180 duration-300"
           >
             <ArrowLeftRight className="size-4" />
           </button>
         </div>
 
-        <FormField label="To" htmlFor="flight-destination">
+        <FormField label={t('search.flights.to')} htmlFor="flight-destination">
           <Input
             id="flight-destination"
             icon={<PlaneLanding className="size-4" />}
-            placeholder="City or airport"
+            placeholder={t('search.placeholder.cityOrAirport')}
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             autoComplete="off"
           />
         </FormField>
 
-        <FormField label="Departure" htmlFor="flight-departure">
-          <Input
+        <FormField label={t('search.flights.departure')} htmlFor="flight-departure">
+          <DatePicker
             id="flight-departure"
-            type="date"
             icon={<CalendarDays className="size-4" />}
             min={todayISO()}
             value={departureDate}
-            onChange={(e) => setDepartureDate(e.target.value)}
+            onChange={setDepartureDate}
           />
         </FormField>
 
-        <FormField label="Return" htmlFor="flight-return">
-          <Input
+        <FormField label={t('search.flights.return')} htmlFor="flight-return">
+          <DatePicker
             id="flight-return"
-            type="date"
             icon={<CalendarDays className="size-4" />}
             min={departureDate}
             value={returnDate}
             disabled={tripType === 'oneway'}
-            onChange={(e) => setReturnDate(e.target.value)}
+            onChange={setReturnDate}
             className={tripType === 'oneway' ? 'opacity-40' : ''}
           />
         </FormField>
 
-        <FormField label="Passengers &amp; class" htmlFor="flight-passengers">
+        <FormField label={t('search.flights.passengersAndClass')} htmlFor="flight-passengers">
           <PassengersPopover passengers={passengers} cabin={cabin} onChange={(p, c) => { setPassengers(p); setCabin(c); }} />
         </FormField>
 
         <div className="flex items-end">
           <Button type="submit" size="lg" fullWidth className="lg:w-auto">
             <Search className="size-4" />
-            Search flights
+            {t('search.flights.searchButton')}
           </Button>
         </div>
       </div>
 
       {tripType === 'multicity' && (
-        <p className="mt-3 text-xs text-ink-500">
-          Multi-city trips start with your first flight below — you’ll be able to add more flights on the results page.
-        </p>
+        <p className="mt-3 text-xs text-ink-500">{t('search.flights.multiCityNotice')}</p>
       )}
       {error && (
         <p role="alert" className="mt-3 text-sm font-medium text-danger-600">

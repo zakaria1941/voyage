@@ -7,22 +7,25 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { useAsync } from '@/hooks/useAsync';
 import { listMyBookings } from '@/services/bookingService';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
+import type { TranslationKey } from '@/i18n';
 import { cn } from '@/utils/cn';
 
 type Tab = 'upcoming' | 'completed' | 'cancelled';
-const TABS: { value: Tab; label: string }[] = [
-  { value: 'upcoming', label: 'Upcoming' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' },
+const TABS: { value: Tab; labelKey: TranslationKey }[] = [
+  { value: 'upcoming', labelKey: 'dashboard.trips.tabUpcoming' },
+  { value: 'completed', labelKey: 'admin.overview.completed' },
+  { value: 'cancelled', labelKey: 'admin.overview.cancelled' },
 ];
 
 export default function DashboardTripsPage() {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const [tab, setTab] = useState<Tab>('upcoming');
   const bookings = useAsync(() => (profile ? listMyBookings(profile.uid) : Promise.resolve([])), [profile?.uid]);
   const [now] = useState(() => Date.now());
 
-  if (bookings.loading) return <PageSpinner label="Loading your trips…" />;
+  if (bookings.loading) return <PageSpinner label={t('dashboard.trips.loading')} />;
   if (bookings.error) return <ErrorState description={bookings.error} onRetry={bookings.refetch} />;
 
   const all = bookings.data ?? [];
@@ -31,28 +34,29 @@ export default function DashboardTripsPage() {
     if (tab === 'completed') return b.status === 'completed' || (b.status === 'confirmed' && b.endDate < now);
     return b.status !== 'cancelled' && !(b.status === 'completed' || (b.status === 'confirmed' && b.endDate < now));
   });
+  const activeTabLabel = t(TABS.find((x) => x.value === tab)!.labelKey);
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-bold text-ink-950 sm:text-3xl">My Trips</h1>
-      <p className="mt-1 text-ink-500">Every flight, stay, car, and transfer you’ve booked.</p>
+      <h1 className="font-display text-2xl font-bold text-ink-950 sm:text-3xl">{t('nav.myTrips')}</h1>
+      <p className="mt-1 text-ink-500">{t('dashboard.trips.subtitle')}</p>
 
       <div className="mt-6 inline-flex rounded-lg bg-ink-100 p-1">
-        {TABS.map((t) => (
+        {TABS.map((tItem) => (
           <button
-            key={t.value}
+            key={tItem.value}
             type="button"
-            onClick={() => setTab(t.value)}
-            className={cn('rounded-md px-4 py-1.5 text-sm font-medium transition-colors', tab === t.value ? 'bg-white text-brand-700 shadow-sm' : 'text-ink-600 hover:text-ink-900')}
+            onClick={() => setTab(tItem.value)}
+            className={cn('rounded-md px-4 py-1.5 text-sm font-medium transition-colors', tab === tItem.value ? 'bg-white text-brand-700 shadow-sm' : 'text-ink-600 hover:text-ink-900')}
           >
-            {t.label}
+            {t(tItem.labelKey)}
           </button>
         ))}
       </div>
 
       <div className="mt-6">
         {filtered.length === 0 ? (
-          <EmptyState icon={<Luggage className="size-6" />} title={`No ${tab} trips`} description="Trips you book will appear here once they match this status." />
+          <EmptyState icon={<Luggage className="size-6" />} title={t('dashboard.trips.noneTitle', { tab: activeTabLabel.toLowerCase() })} description={t('dashboard.trips.noneDesc')} />
         ) : (
           <div className="flex flex-col gap-4">
             {filtered.map((b) => (

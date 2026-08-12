@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, CalendarDays, Search } from 'lucide-react';
 import { GuestsPopover } from '@/components/booking/GuestsPopover';
 import { Input } from '@/components/ui/Input';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { FormField } from '@/components/ui/FormField';
 import { Button } from '@/components/ui/Button';
+import { useLanguage } from '@/context/LanguageContext';
 import type { HotelSearchParams } from '@/types/search';
 import { addDaysISO, todayISO } from '@/utils/date';
 
@@ -15,6 +17,7 @@ interface HotelSearchFormProps {
 
 export function HotelSearchForm({ initial, onSearch }: HotelSearchFormProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [destination, setDestination] = useState(initial?.destination ?? '');
   const [checkIn, setCheckIn] = useState(initial?.checkIn ?? addDaysISO(todayISO(), 14));
   const [checkOut, setCheckOut] = useState(initial?.checkOut ?? addDaysISO(todayISO(), 17));
@@ -26,11 +29,11 @@ export function HotelSearchForm({ initial, onSearch }: HotelSearchFormProps) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!destination.trim()) {
-      setError('Please enter a destination.');
+      setError(t('search.hotels.errorMissingDestination'));
       return;
     }
     if (checkOut <= checkIn) {
-      setError('Check-out must be after check-in.');
+      setError(t('search.hotels.errorCheckoutBeforeCheckin'));
       return;
     }
     setError(null);
@@ -54,47 +57,45 @@ export function HotelSearchForm({ initial, onSearch }: HotelSearchFormProps) {
   return (
     <form onSubmit={handleSubmit} className="w-full">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1.2fr_auto]">
-        <FormField label="Destination" htmlFor="hotel-destination">
+        <FormField label={t('search.hotels.destination')} htmlFor="hotel-destination">
           <Input
             id="hotel-destination"
             icon={<MapPin className="size-4" />}
-            placeholder="City, region, or hotel name"
+            placeholder={t('search.hotels.destinationPlaceholder')}
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             autoComplete="off"
           />
         </FormField>
 
-        <FormField label="Check-in" htmlFor="hotel-checkin">
-          <Input
+        <FormField label={t('search.hotels.checkIn')} htmlFor="hotel-checkin">
+          <DatePicker
             id="hotel-checkin"
-            type="date"
             icon={<CalendarDays className="size-4" />}
             min={todayISO()}
             value={checkIn}
-            onChange={(e) => setCheckIn(e.target.value)}
+            onChange={setCheckIn}
           />
         </FormField>
 
-        <FormField label="Check-out" htmlFor="hotel-checkout">
-          <Input
+        <FormField label={t('search.hotels.checkOut')} htmlFor="hotel-checkout">
+          <DatePicker
             id="hotel-checkout"
-            type="date"
             icon={<CalendarDays className="size-4" />}
             min={addDaysISO(checkIn, 1)}
             value={checkOut}
-            onChange={(e) => setCheckOut(e.target.value)}
+            onChange={setCheckOut}
           />
         </FormField>
 
-        <FormField label="Guests" htmlFor="hotel-guests">
+        <FormField label={t('search.hotels.guests')} htmlFor="hotel-guests">
           <GuestsPopover rooms={rooms} adults={adults} children={children} onChange={(v) => { setRooms(v.rooms); setAdults(v.adults); setChildren(v.children); }} />
         </FormField>
 
         <div className="flex items-end">
           <Button type="submit" size="lg" fullWidth className="lg:w-auto">
             <Search className="size-4" />
-            Search hotels
+            {t('search.hotels.searchButton')}
           </Button>
         </div>
       </div>

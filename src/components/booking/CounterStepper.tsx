@@ -17,15 +17,16 @@ export function CounterStepper({ label, sublabel, value, min = 0, max = 9, onCha
         <p className="text-sm font-medium text-ink-900">{label}</p>
         {sublabel && <p className="text-xs text-ink-500">{sublabel}</p>}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3.5">
         <button
           type="button"
           disabled={value <= min}
           onClick={() => onChange(Math.max(min, value - 1))}
           aria-label={`Decrease ${label}`}
           className={cn(
-            'flex size-8 items-center justify-center rounded-full border border-ink-200 text-ink-600 transition-colors',
-            'hover:border-brand-400 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-ink-200 disabled:hover:text-ink-600',
+            'flex size-9 items-center justify-center rounded-full border border-ink-200 text-ink-600 transition-all',
+            'hover:border-brand-400 hover:text-brand-700 hover:shadow-sm active:scale-95',
+            'disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-ink-200 disabled:hover:text-ink-600 disabled:hover:shadow-none disabled:active:scale-100',
           )}
         >
           <Minus className="size-3.5" />
@@ -37,8 +38,9 @@ export function CounterStepper({ label, sublabel, value, min = 0, max = 9, onCha
           onClick={() => onChange(Math.min(max, value + 1))}
           aria-label={`Increase ${label}`}
           className={cn(
-            'flex size-8 items-center justify-center rounded-full border border-ink-200 text-ink-600 transition-colors',
-            'hover:border-brand-400 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-ink-200 disabled:hover:text-ink-600',
+            'flex size-9 items-center justify-center rounded-full border border-ink-200 text-ink-600 transition-all',
+            'hover:border-brand-400 hover:text-brand-700 hover:shadow-sm active:scale-95',
+            'disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-ink-200 disabled:hover:text-ink-600 disabled:hover:shadow-none disabled:active:scale-100',
           )}
         >
           <Plus className="size-3.5" />

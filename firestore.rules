@@ -126,8 +126,11 @@ service cloud.firestore {
     }
 
     // ------------------------------------------------------------- coupons
+    // Public read (like the other inventory collections) so the public
+    // /deals page and the checkout coupon-preview both work for signed-out
+    // visitors, not just authenticated users. Only admins can write.
     match /coupons/{couponId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 

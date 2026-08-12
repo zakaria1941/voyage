@@ -11,25 +11,37 @@ import { Button } from '@/components/ui/Button';
 import { GoogleIcon } from '@/components/ui/GoogleIcon';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { useLanguage } from '@/context/LanguageContext';
 
-const registerSchema = z
-  .object({
-    firstName: z.string().trim().min(1, 'First name is required').max(50),
-    lastName: z.string().trim().min(1, 'Last name is required').max(50),
-    email: z.email('Enter a valid email address'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
-    confirmPassword: z.string(),
-    acceptTerms: z.boolean().refine((v) => v === true, { message: 'You must accept the Terms to continue' }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords don’t match',
-    path: ['confirmPassword'],
-  });
+function useRegisterSchema() {
+  const { t } = useLanguage();
+  return z
+    .object({
+      firstName: z.string().trim().min(1, t('auth.validation.firstNameRequired')).max(50),
+      lastName: z.string().trim().min(1, t('auth.validation.lastNameRequired')).max(50),
+      email: z.email(t('auth.validation.emailInvalid')),
+      password: z.string().min(6, t('auth.validation.passwordMinLength')),
+      confirmPassword: z.string(),
+      acceptTerms: z.boolean().refine((v) => v === true, { message: t('auth.validation.acceptTermsRequired') }),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('auth.validation.passwordsDontMatch'),
+      path: ['confirmPassword'],
+    });
+}
 
-type RegisterFormValues = z.infer<typeof registerSchema>;
+type RegisterFormValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  acceptTerms: boolean;
+};
 
 export default function RegisterPage() {
   const { register: registerUser, loginWithGoogle } = useAuth();
+  const { t } = useLanguage();
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,6 +52,7 @@ export default function RegisterPage() {
   const from = (location.state as { from?: { pathname: string; search?: string } } | null)?.from;
   const redirectTo = from ? `${from.pathname}${from.search || ''}` : '/dashboard';
 
+  const registerSchema = useRegisterSchema();
   const {
     register,
     handleSubmit,
@@ -58,10 +71,10 @@ export default function RegisterPage() {
         firstName: values.firstName,
         lastName: values.lastName,
       });
-      toast.success('Account created', 'We sent you a verification email — you can verify anytime from your dashboard.');
+      toast.success(t('auth.register.success'), t('auth.register.successDesc'));
       navigate(redirectTo, { replace: true });
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'We couldn’t create your account.');
+      setFormError(error instanceof Error ? error.message : t('auth.toast.registerFailedGeneric'));
     }
   }
 
@@ -70,17 +83,20 @@ export default function RegisterPage() {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      toast.success('Welcome to Voyago!');
+      toast.success(t('auth.toast.welcomeToVoyago'));
       navigate(redirectTo, { replace: true });
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Google sign-in failed.');
+      setFormError(error instanceof Error ? error.message : t('auth.toast.googleSignInFailed'));
     } finally {
       setGoogleLoading(false);
     }
   }
 
+  const [acceptTermsBefore, acceptTermsRest] = t('auth.register.acceptTerms').split('{terms}');
+  const [acceptTermsBetween, acceptTermsAfter] = acceptTermsRest.split('{privacy}');
+
   return (
-    <AuthLayout title="Create your account" subtitle="Join Voyago to save favorites, track trips, and book faster.">
+    <AuthLayout title={t('auth.register.title')} subtitle={t('auth.register.subtitle')}>
       <button
         type="button"
         onClick={handleGoogle}
@@ -88,26 +104,26 @@ export default function RegisterPage() {
         className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-ink-200 bg-white text-sm font-semibold text-ink-700 transition-colors hover:bg-ink-50 disabled:opacity-60"
       >
         <GoogleIcon className="size-4" />
-        Continue with Google
+        {t('auth.continueWithGoogle')}
       </button>
 
       <div className="my-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-ink-200" />
-        <span className="text-xs font-medium uppercase text-ink-400">or</span>
+        <span className="text-xs font-medium uppercase text-ink-400">{t('auth.or')}</span>
         <div className="h-px flex-1 bg-ink-200" />
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="First name" htmlFor="register-first-name" error={errors.firstName?.message}>
+          <FormField label={t('auth.register.firstName')} htmlFor="register-first-name" error={errors.firstName?.message}>
             <Input id="register-first-name" icon={<User className="size-4" />} autoComplete="given-name" error={errors.firstName?.message} {...register('firstName')} />
           </FormField>
-          <FormField label="Last name" htmlFor="register-last-name" error={errors.lastName?.message}>
+          <FormField label={t('auth.register.lastName')} htmlFor="register-last-name" error={errors.lastName?.message}>
             <Input id="register-last-name" autoComplete="family-name" error={errors.lastName?.message} {...register('lastName')} />
           </FormField>
         </div>
 
-        <FormField label="Email" htmlFor="register-email" error={errors.email?.message}>
+        <FormField label={t('auth.emailLabel')} htmlFor="register-email" error={errors.email?.message}>
           <Input
             id="register-email"
             type="email"
@@ -119,7 +135,7 @@ export default function RegisterPage() {
           />
         </FormField>
 
-        <FormField label="Password" htmlFor="register-password" error={errors.password?.message} hint={!errors.password ? 'At least 6 characters' : undefined}>
+        <FormField label={t('auth.login.password')} htmlFor="register-password" error={errors.password?.message} hint={!errors.password ? t('auth.passwordHint') : undefined}>
           <div className="relative">
             <Input
               id="register-password"
@@ -135,14 +151,14 @@ export default function RegisterPage() {
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
             >
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
         </FormField>
 
-        <FormField label="Confirm password" htmlFor="register-confirm-password" error={errors.confirmPassword?.message}>
+        <FormField label={t('auth.register.confirmPassword')} htmlFor="register-confirm-password" error={errors.confirmPassword?.message}>
           <Input
             id="register-confirm-password"
             type={showPassword ? 'text' : 'password'}
@@ -157,14 +173,15 @@ export default function RegisterPage() {
         <label className="flex items-start gap-2.5 text-sm text-ink-600">
           <input type="checkbox" className="mt-0.5 size-4 rounded border-ink-300 text-brand-700 focus:ring-accent-500/40" {...register('acceptTerms')} />
           <span>
-            I agree to Voyago’s{' '}
+            {acceptTermsBefore}
             <Link to="/help" className="font-medium text-brand-700 hover:text-brand-800">
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link to="/help" className="font-medium text-brand-700 hover:text-brand-800">
-              Privacy Policy
+              {t('footer.termsOfService')}
             </Link>
+            {acceptTermsBetween}
+            <Link to="/help" className="font-medium text-brand-700 hover:text-brand-800">
+              {t('footer.privacyPolicy')}
+            </Link>
+            {acceptTermsAfter}
           </span>
         </label>
         {errors.acceptTerms && (
@@ -180,14 +197,14 @@ export default function RegisterPage() {
         )}
 
         <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
-          Create account
+          {t('auth.register.submit')}
         </Button>
       </form>
 
       <p className="mt-8 text-center text-sm text-ink-500">
-        Already have an account?{' '}
+        {t('auth.register.hasAccount')}{' '}
         <Link to="/login" className="font-semibold text-brand-700 hover:text-brand-800">
-          Log in
+          {t('auth.register.logIn')}
         </Link>
       </p>
     </AuthLayout>

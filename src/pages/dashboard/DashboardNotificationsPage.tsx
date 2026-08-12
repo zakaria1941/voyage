@@ -5,6 +5,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { useAsync } from '@/hooks/useAsync';
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from '@/services/notificationService';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { formatRelative } from '@/utils/date';
 import { cn } from '@/utils/cn';
 import type { Notification, NotificationType } from '@/types/notification';
@@ -18,6 +19,7 @@ const TYPE_ICON: Record<NotificationType, typeof Bell> = {
 
 export default function DashboardNotificationsPage() {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const notifications = useAsync(() => (profile ? listNotifications(profile.uid) : Promise.resolve([])), [profile?.uid]);
 
   async function handleMarkRead(n: Notification) {
@@ -32,7 +34,7 @@ export default function DashboardNotificationsPage() {
     notifications.refetch();
   }
 
-  if (notifications.loading) return <PageSpinner label="Loading notifications…" />;
+  if (notifications.loading) return <PageSpinner label={t('dashboard.notifications.loading')} />;
   if (notifications.error) return <ErrorState description={notifications.error} onRetry={notifications.refetch} />;
 
   const items = notifications.data ?? [];
@@ -42,20 +44,20 @@ export default function DashboardNotificationsPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-ink-950 sm:text-3xl">Notifications</h1>
-          <p className="mt-1 text-ink-500">Updates about your bookings and trips.</p>
+          <h1 className="font-display text-2xl font-bold text-ink-950 sm:text-3xl">{t('dashboard.notifications.title')}</h1>
+          <p className="mt-1 text-ink-500">{t('dashboard.notifications.subtitle')}</p>
         </div>
         {unreadCount > 0 && (
           <button type="button" onClick={handleMarkAllRead} className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-3.5 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50">
             <CheckCheck className="size-4" />
-            Mark all as read
+            {t('dashboard.notifications.markAllRead')}
           </button>
         )}
       </div>
 
       <div className="mt-6">
         {items.length === 0 ? (
-          <EmptyState icon={<Bell className="size-6" />} title="No notifications" description="Booking confirmations and trip reminders will appear here." />
+          <EmptyState icon={<Bell className="size-6" />} title={t('dashboard.notifications.empty')} description={t('dashboard.notifications.emptyDesc')} />
         ) : (
           <div className="flex flex-col gap-2">
             {items.map((n) => {
@@ -75,7 +77,7 @@ export default function DashboardNotificationsPage() {
                     <p className="mt-0.5 text-sm text-ink-500">{n.message}</p>
                     <p className="mt-1 text-xs text-ink-400">{formatRelative(n.createdAt)}</p>
                   </div>
-                  {!n.read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-brand-600" aria-label="Unread" />}
+                  {!n.read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-brand-600" aria-label={t('dashboard.notifications.unreadAriaLabel')} />}
                 </button>
               );
             })}

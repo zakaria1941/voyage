@@ -4,22 +4,25 @@ import { FlightSearchForm } from '@/components/flight/FlightSearchForm';
 import { HotelSearchForm } from '@/components/hotel/HotelSearchForm';
 import { CarSearchForm } from '@/components/car/CarSearchForm';
 import { TransferSearchForm } from '@/components/transfer/TransferSearchForm';
+import { useLanguage } from '@/context/LanguageContext';
+import type { TranslationKey } from '@/i18n';
 import { cn } from '@/utils/cn';
 import type { BookingType } from '@/types/common';
 
-const TABS: { type: BookingType; label: string; icon: typeof Plane }[] = [
-  { type: 'flight', label: 'Flights', icon: Plane },
-  { type: 'hotel', label: 'Hotels', icon: Hotel },
-  { type: 'car', label: 'Cars', icon: Car },
-  { type: 'transfer', label: 'Transfers', icon: CarTaxiFront },
+const TABS: { type: BookingType; labelKey: TranslationKey; icon: typeof Plane }[] = [
+  { type: 'flight', labelKey: 'nav.flights', icon: Plane },
+  { type: 'hotel', labelKey: 'nav.hotels', icon: Hotel },
+  { type: 'car', labelKey: 'nav.cars', icon: Car },
+  { type: 'transfer', labelKey: 'nav.transfers', icon: CarTaxiFront },
 ];
 
 export function SearchWidget({ defaultTab = 'flight', className }: { defaultTab?: BookingType; className?: string }) {
   const [active, setActive] = useState<BookingType>(defaultTab);
+  const { t } = useLanguage();
 
   return (
     <div className={cn('w-full rounded-3xl border border-ink-100 bg-white p-3 shadow-lifted sm:p-4', className)}>
-      <div role="tablist" aria-label="Search by category" className="flex gap-1 overflow-x-auto pb-1">
+      <div role="tablist" aria-label={t('search.widget.categoryLabel')} className="flex gap-1 overflow-x-auto pb-1">
         {TABS.map((tab) => (
           <button
             key={tab.type}
@@ -32,7 +35,7 @@ export function SearchWidget({ defaultTab = 'flight', className }: { defaultTab?
             )}
           >
             <tab.icon className="size-4" />
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>

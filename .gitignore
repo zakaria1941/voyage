@@ -17,3 +17,8 @@ coverage
 
 # Local Netlify folder
 .netlify
+
+# Firebase service account keys — never commit these
+*firebase-adminsdk*.json
+serviceAccount*.json
+service-account*.json

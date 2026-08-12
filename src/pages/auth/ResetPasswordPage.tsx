@@ -13,31 +13,32 @@ import { LinkButton } from '@/components/ui/LinkButton';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { getFriendlyErrorMessage } from '@/utils/errors';
 
-const schema = z
-  .object({
-    password: z.string().min(6, 'Password must be at least 6 characters'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords don’t match',
-    path: ['confirmPassword'],
-  });
-
-type FormValues = z.infer<typeof schema>;
+type FormValues = { password: string; confirmPassword: string };
 
 type CodeState = { status: 'checking' } | { status: 'invalid'; message: string } | { status: 'valid'; email: string } | { status: 'done' };
 
 export default function ResetPasswordPage() {
   const { confirmPasswordReset } = useAuth();
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const oobCode = searchParams.get('oobCode');
   const [state, setState] = useState<CodeState>(() =>
-    oobCode ? { status: 'checking' } : { status: 'invalid', message: 'This reset link is missing required information.' },
+    oobCode ? { status: 'checking' } : { status: 'invalid', message: t('auth.resetPassword.missingInfo') },
   );
   const [formError, setFormError] = useState<string | null>(null);
 
+  const schema = z
+    .object({
+      password: z.string().min(6, t('auth.validation.passwordMinLength')),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('auth.validation.passwordsDontMatch'),
+      path: ['confirmPassword'],
+    });
   const {
     register,
     handleSubmit,
@@ -48,8 +49,8 @@ export default function ResetPasswordPage() {
     if (!oobCode) return;
     verifyPasswordResetCode(auth, oobCode)
       .then((email) => setState({ status: 'valid', email }))
-      .catch((error) => setState({ status: 'invalid', message: getFriendlyErrorMessage(error, 'This reset link is invalid or has expired.') }));
-  }, [oobCode]);
+      .catch((error) => setState({ status: 'invalid', message: getFriendlyErrorMessage(error, t('auth.resetPassword.invalidOrExpired')) }));
+  }, [oobCode, t]);
 
   async function onSubmit(values: FormValues) {
     if (!oobCode) return;
@@ -58,13 +59,13 @@ export default function ResetPasswordPage() {
       await confirmPasswordReset(oobCode, values.password);
       setState({ status: 'done' });
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'We couldn’t reset your password.');
+      setFormError(error instanceof Error ? error.message : t('auth.resetPassword.errorGeneric'));
     }
   }
 
   if (state.status === 'checking') {
     return (
-      <AuthLayout title="Reset your password" subtitle="Verifying your reset link…">
+      <AuthLayout title={t('auth.resetPassword.title')} subtitle={t('auth.resetPassword.verifying')}>
         <PageSpinner />
       </AuthLayout>
     );
@@ -72,7 +73,7 @@ export default function ResetPasswordPage() {
 
   if (state.status === 'invalid') {
     return (
-      <AuthLayout title="Link expired" subtitle="This password reset link is no longer valid.">
+      <AuthLayout title={t('auth.resetPassword.linkExpiredTitle')} subtitle={t('auth.resetPassword.linkExpiredSubtitle')}>
         <div className="flex flex-col items-center rounded-2xl border border-danger-100 bg-danger-50/40 px-6 py-10 text-center">
           <span className="flex size-14 items-center justify-center rounded-full bg-danger-50 text-danger-500">
             <XCircle className="size-7" />
@@ -81,7 +82,7 @@ export default function ResetPasswordPage() {
         </div>
         <Link to="/forgot-password" className="mt-6 flex items-center justify-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800">
           <ArrowLeft className="size-4" />
-          Request a new link
+          {t('auth.resetPassword.requestNewLink')}
         </Link>
       </AuthLayout>
     );
@@ -89,24 +90,24 @@ export default function ResetPasswordPage() {
 
   if (state.status === 'done') {
     return (
-      <AuthLayout title="Password updated" subtitle="Your password has been changed successfully.">
+      <AuthLayout title={t('auth.resetPassword.doneTitle')} subtitle={t('auth.resetPassword.doneSubtitle')}>
         <div className="flex flex-col items-center rounded-2xl border border-ink-100 bg-ink-50 px-6 py-10 text-center">
           <span className="flex size-14 items-center justify-center rounded-full bg-success-50 text-success-600">
             <CheckCircle2 className="size-7" />
           </span>
-          <p className="mt-4 text-sm text-ink-600">You can now log in with your new password.</p>
+          <p className="mt-4 text-sm text-ink-600">{t('auth.resetPassword.doneDescription')}</p>
         </div>
         <LinkButton to="/login" fullWidth size="lg" className="mt-6">
-          Log in
+          {t('auth.login.submit')}
         </LinkButton>
       </AuthLayout>
     );
   }
 
   return (
-    <AuthLayout title="Set a new password" subtitle={`Choose a new password for ${state.email}.`}>
+    <AuthLayout title={t('auth.resetPassword.title')} subtitle={t('auth.resetPassword.subtitleWithEmail', { email: state.email })}>
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-        <FormField label="New password" htmlFor="reset-password" error={errors.password?.message} hint={!errors.password ? 'At least 6 characters' : undefined}>
+        <FormField label={t('auth.resetPassword.newPassword')} htmlFor="reset-password" error={errors.password?.message} hint={!errors.password ? t('auth.passwordHint') : undefined}>
           <Input
             id="reset-password"
             type="password"
@@ -118,7 +119,7 @@ export default function ResetPasswordPage() {
           />
         </FormField>
 
-        <FormField label="Confirm new password" htmlFor="reset-confirm-password" error={errors.confirmPassword?.message}>
+        <FormField label={t('auth.resetPassword.confirmNewPassword')} htmlFor="reset-confirm-password" error={errors.confirmPassword?.message}>
           <Input
             id="reset-confirm-password"
             type="password"
@@ -137,7 +138,7 @@ export default function ResetPasswordPage() {
         )}
 
         <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
-          Update password
+          {t('auth.resetPassword.submit')}
         </Button>
       </form>
     </AuthLayout>

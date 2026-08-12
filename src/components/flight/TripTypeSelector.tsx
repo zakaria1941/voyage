@@ -1,15 +1,18 @@
+import { useLanguage } from '@/context/LanguageContext';
+import type { TranslationKey } from '@/i18n';
 import type { TripType } from '@/types/search';
 import { cn } from '@/utils/cn';
 
-const OPTIONS: { value: TripType; label: string }[] = [
-  { value: 'roundtrip', label: 'Round trip' },
-  { value: 'oneway', label: 'One way' },
-  { value: 'multicity', label: 'Multi-city' },
+const OPTIONS: { value: TripType; labelKey: TranslationKey }[] = [
+  { value: 'roundtrip', labelKey: 'search.tripType.roundtrip' },
+  { value: 'oneway', labelKey: 'search.tripType.oneway' },
+  { value: 'multicity', labelKey: 'search.tripType.multicity' },
 ];
 
 export function TripTypeSelector({ value, onChange }: { value: TripType; onChange: (v: TripType) => void }) {
+  const { t } = useLanguage();
   return (
-    <div role="radiogroup" aria-label="Trip type" className="inline-flex rounded-lg bg-ink-100 p-1">
+    <div role="radiogroup" aria-label={t('search.tripType.ariaLabel')} className="inline-flex rounded-lg bg-ink-100 p-1">
       {OPTIONS.map((opt) => (
         <button
           key={opt.value}
@@ -22,7 +25,7 @@ export function TripTypeSelector({ value, onChange }: { value: TripType; onChang
             value === opt.value ? 'bg-white text-brand-700 shadow-sm' : 'text-ink-600 hover:text-ink-900',
           )}
         >
-          {opt.label}
+          {t(opt.labelKey)}
         </button>
       ))}
     </div>

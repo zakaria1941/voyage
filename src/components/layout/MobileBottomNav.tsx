@@ -1,16 +1,19 @@
 import { NavLink } from 'react-router-dom';
 import { Home, Search, Luggage, UserRound } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
+import type { TranslationKey } from '@/i18n';
 import { cn } from '@/utils/cn';
 
 export function MobileBottomNav() {
   const { profile } = useAuth();
+  const { t } = useLanguage();
 
-  const items = [
-    { to: '/', label: 'Home', icon: Home, end: true },
-    { to: '/explore', label: 'Search', icon: Search, end: false },
-    { to: profile ? '/dashboard/trips' : '/login', label: 'Trips', icon: Luggage, end: false },
-    { to: profile ? '/dashboard/profile' : '/login', label: 'Profile', icon: UserRound, end: false },
+  const items: { to: string; key: TranslationKey; icon: typeof Home; end: boolean }[] = [
+    { to: '/', key: 'nav.mobile.home', icon: Home, end: true },
+    { to: '/explore', key: 'nav.mobile.search', icon: Search, end: false },
+    { to: profile ? '/dashboard/trips' : '/login', key: 'nav.mobile.trips', icon: Luggage, end: false },
+    { to: profile ? '/dashboard/profile' : '/login', key: 'nav.mobile.profile', icon: UserRound, end: false },
   ];
 
   return (
@@ -20,7 +23,7 @@ export function MobileBottomNav() {
     >
       <ul className="grid grid-cols-4">
         {items.map((item) => (
-          <li key={item.label}>
+          <li key={item.key}>
             <NavLink
               to={item.to}
               end={item.end}
@@ -34,7 +37,7 @@ export function MobileBottomNav() {
               {({ isActive }) => (
                 <>
                   <item.icon className={cn('size-5', isActive && 'text-brand-700')} strokeWidth={isActive ? 2.5 : 2} />
-                  {item.label}
+                  {t(item.key)}
                 </>
               )}
             </NavLink>

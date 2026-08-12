@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, CalendarClock, Search } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { FormField } from '@/components/ui/FormField';
 import { Button } from '@/components/ui/Button';
+import { useLanguage } from '@/context/LanguageContext';
 import type { CarSearchParams } from '@/types/search';
 import { addDaysISO, todayISO } from '@/utils/date';
 
@@ -14,6 +16,7 @@ interface CarSearchFormProps {
 
 export function CarSearchForm({ initial, onSearch }: CarSearchFormProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [pickupLocation, setPickupLocation] = useState(initial?.pickupLocation ?? '');
   const [sameDropoff, setSameDropoff] = useState(initial?.sameDropoff ?? true);
   const [dropoffLocation, setDropoffLocation] = useState(initial?.dropoffLocation ?? '');
@@ -27,15 +30,15 @@ export function CarSearchForm({ initial, onSearch }: CarSearchFormProps) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!pickupLocation.trim()) {
-      setError('Please enter a pick-up location.');
+      setError(t('search.cars.errorMissingPickup'));
       return;
     }
     if (!sameDropoff && !dropoffLocation.trim()) {
-      setError('Please enter a drop-off location.');
+      setError(t('search.cars.errorMissingDropoff'));
       return;
     }
     if (dropoffDate < pickupDate) {
-      setError('Drop-off date can’t be before pick-up date.');
+      setError(t('search.cars.errorDropoffBeforePickup'));
       return;
     }
     setError(null);
@@ -76,42 +79,46 @@ export function CarSearchForm({ initial, onSearch }: CarSearchFormProps) {
           onChange={(e) => setSameDropoff(e.target.checked)}
           className="size-4 rounded border-ink-300 text-brand-700 focus:ring-accent-500/40"
         />
-        Return car to the same location
+        {t('search.cars.sameDropoffLabel')}
       </label>
 
       <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${sameDropoff ? 'lg:grid-cols-[1.4fr_1fr_1fr_0.7fr_auto]' : 'lg:grid-cols-[1.1fr_1.1fr_1fr_1fr_0.6fr_auto]'}`}>
-        <FormField label="Pick-up location" htmlFor="car-pickup">
-          <Input id="car-pickup" icon={<MapPin className="size-4" />} placeholder="City or airport" value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)} autoComplete="off" />
+        <FormField label={t('search.cars.pickupLocation')} htmlFor="car-pickup">
+          <Input id="car-pickup" icon={<MapPin className="size-4" />} placeholder={t('search.placeholder.cityOrAirport')} value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)} autoComplete="off" />
         </FormField>
 
         {!sameDropoff && (
-          <FormField label="Drop-off location" htmlFor="car-dropoff">
-            <Input id="car-dropoff" icon={<MapPin className="size-4" />} placeholder="City or airport" value={dropoffLocation} onChange={(e) => setDropoffLocation(e.target.value)} autoComplete="off" />
+          <FormField label={t('search.cars.dropoffLocation')} htmlFor="car-dropoff">
+            <Input id="car-dropoff" icon={<MapPin className="size-4" />} placeholder={t('search.placeholder.cityOrAirport')} value={dropoffLocation} onChange={(e) => setDropoffLocation(e.target.value)} autoComplete="off" />
           </FormField>
         )}
 
-        <FormField label="Pick-up" htmlFor="car-pickup-date">
+        <FormField label={t('search.cars.pickup')} htmlFor="car-pickup-date">
           <div className="flex gap-1.5">
-            <Input id="car-pickup-date" type="date" icon={<CalendarClock className="size-4" />} min={todayISO()} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="pr-1" />
-            <Input type="time" aria-label="Pick-up time" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-[5.5rem] px-2" />
+            <div className="min-w-0 flex-1">
+              <DatePicker id="car-pickup-date" icon={<CalendarClock className="size-4" />} min={todayISO()} value={pickupDate} onChange={setPickupDate} />
+            </div>
+            <Input type="time" aria-label={t('search.cars.pickupTimeAriaLabel')} value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-[5.5rem] px-2" />
           </div>
         </FormField>
 
-        <FormField label="Drop-off" htmlFor="car-dropoff-date">
+        <FormField label={t('search.cars.dropoff')} htmlFor="car-dropoff-date">
           <div className="flex gap-1.5">
-            <Input id="car-dropoff-date" type="date" icon={<CalendarClock className="size-4" />} min={pickupDate} value={dropoffDate} onChange={(e) => setDropoffDate(e.target.value)} />
-            <Input type="time" aria-label="Drop-off time" value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} className="w-[5.5rem] px-2" />
+            <div className="min-w-0 flex-1">
+              <DatePicker id="car-dropoff-date" icon={<CalendarClock className="size-4" />} min={pickupDate} value={dropoffDate} onChange={setDropoffDate} />
+            </div>
+            <Input type="time" aria-label={t('search.cars.dropoffTimeAriaLabel')} value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} className="w-[5.5rem] px-2" />
           </div>
         </FormField>
 
-        <FormField label="Driver age" htmlFor="car-driver-age">
+        <FormField label={t('search.cars.driverAge')} htmlFor="car-driver-age">
           <Input id="car-driver-age" type="number" min={18} max={99} value={driverAge} onChange={(e) => setDriverAge(Number(e.target.value))} />
         </FormField>
 
         <div className="flex items-end">
           <Button type="submit" size="lg" fullWidth className="lg:w-auto">
             <Search className="size-4" />
-            Search cars
+            {t('search.cars.searchButton')}
           </Button>
         </div>
       </div>

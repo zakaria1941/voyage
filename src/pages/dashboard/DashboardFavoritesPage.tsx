@@ -13,6 +13,7 @@ import { getTransfer } from '@/services/transferService';
 import { useAuth } from '@/context/AuthContext';
 import { useCurrency } from '@/context/CurrencyContext';
 import { useToast } from '@/context/ToastContext';
+import { useLanguage } from '@/context/LanguageContext';
 import type { Favorite } from '@/types/favorite';
 
 interface ResolvedFavorite {
@@ -51,6 +52,7 @@ export default function DashboardFavoritesPage() {
   const { profile } = useAuth();
   const { format } = useCurrency();
   const toast = useToast();
+  const { t } = useLanguage();
 
   const resolved = useAsync(async () => {
     if (!profile) return [];
@@ -62,23 +64,23 @@ export default function DashboardFavoritesPage() {
   async function handleRemove(fav: Favorite) {
     if (!profile) return;
     await removeFavorite(profile.uid, fav.itemType, fav.itemId);
-    toast.success('Removed from favorites');
+    toast.success(t('dashboard.favorites.removedToast'));
     resolved.refetch();
   }
 
-  if (resolved.loading) return <PageSpinner label="Loading your favorites…" />;
+  if (resolved.loading) return <PageSpinner label={t('dashboard.favorites.loading')} />;
   if (resolved.error) return <ErrorState description={resolved.error} onRetry={resolved.refetch} />;
 
   const items = resolved.data ?? [];
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-bold text-ink-950 sm:text-3xl">Favorites</h1>
-      <p className="mt-1 text-ink-500">Hotels, cars, flights, and transfers you’ve saved.</p>
+      <h1 className="font-display text-2xl font-bold text-ink-950 sm:text-3xl">{t('dashboard.favorites.title')}</h1>
+      <p className="mt-1 text-ink-500">{t('dashboard.favorites.subtitle')}</p>
 
       <div className="mt-6">
         {items.length === 0 ? (
-          <EmptyState icon={<Heart className="size-6" />} title="No favorites yet" description="Tap the heart icon on any hotel or car to save it here." />
+          <EmptyState icon={<Heart className="size-6" />} title={t('dashboard.favorites.empty')} description={t('dashboard.favorites.emptyDesc')} />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => {
@@ -98,7 +100,7 @@ export default function DashboardFavoritesPage() {
                   <button
                     type="button"
                     onClick={() => handleRemove(item.favorite)}
-                    aria-label="Remove from favorites"
+                    aria-label={t('dashboard.favorites.removeAriaLabel')}
                     className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full bg-white/90 text-danger-600 shadow-sm hover:bg-white"
                   >
                     <Heart className="size-4 fill-current" />

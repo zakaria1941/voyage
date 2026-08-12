@@ -7,17 +7,26 @@ import { useAsync } from '@/hooks/useAsync';
 import { listAllBookings } from '@/services/bookingService';
 import { getUserCount } from '@/services/userService';
 import { useCurrency } from '@/context/CurrencyContext';
+import { useLanguage } from '@/context/LanguageContext';
+import type { TranslationKey } from '@/i18n';
 import type { BookingType, BookingStatus } from '@/types/common';
 
-const SERVICE_LABELS: Record<BookingType, string> = { flight: 'Flights', hotel: 'Hotels', car: 'Cars', transfer: 'Transfers' };
+const SERVICE_LABEL_KEYS: Record<BookingType, TranslationKey> = { flight: 'nav.flights', hotel: 'nav.hotels', car: 'nav.cars', transfer: 'nav.transfers' };
+const STATUS_LABEL_KEYS: Record<BookingStatus, TranslationKey> = {
+  confirmed: 'admin.overview.confirmed',
+  pending: 'admin.overview.pending',
+  cancelled: 'admin.overview.cancelled',
+  completed: 'admin.overview.completed',
+};
 const STATUS_COLORS: Record<BookingStatus, string> = { confirmed: '#10b981', pending: '#3d63c2', cancelled: '#ef4444', completed: '#9ca3af' };
 
 export default function AdminOverviewPage() {
   const { format } = useCurrency();
+  const { t } = useLanguage();
   const bookings = useAsync(() => listAllBookings(500), []);
   const userCount = useAsync(() => getUserCount(), []);
 
-  if (bookings.loading || userCount.loading) return <PageSpinner label="Loading analytics…" />;
+  if (bookings.loading || userCount.loading) return <PageSpinner label={t('admin.overview.loadingAnalytics')} />;
   if (bookings.error) return <ErrorState description={bookings.error} onRetry={bookings.refetch} />;
 
   const all = bookings.data ?? [];
@@ -27,31 +36,31 @@ export default function AdminOverviewPage() {
   const cancelled = all.filter((b) => b.status === 'cancelled').length;
 
   const byService = (['flight', 'hotel', 'car', 'transfer'] as BookingType[]).map((type) => ({
-    name: SERVICE_LABELS[type],
+    name: t(SERVICE_LABEL_KEYS[type]),
     bookings: all.filter((b) => b.bookingType === type).length,
   }));
 
   const byStatus = (['pending', 'confirmed', 'completed', 'cancelled'] as BookingStatus[])
-    .map((status) => ({ name: status, value: all.filter((b) => b.status === status).length, color: STATUS_COLORS[status] }))
+    .map((status) => ({ name: t(STATUS_LABEL_KEYS[status]), value: all.filter((b) => b.status === status).length, color: STATUS_COLORS[status] }))
     .filter((s) => s.value > 0);
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-bold text-ink-950">Overview</h1>
-      <p className="mt-1 text-sm text-ink-500">A snapshot of Voyago’s activity across all services.</p>
+      <h1 className="font-display text-2xl font-bold text-ink-950">{t('admin.overview.title')}</h1>
+      <p className="mt-1 text-sm text-ink-500">{t('admin.overview.subtitle')}</p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard icon={Users} label="Total users" value={userCount.data ?? 0} />
-        <StatCard icon={Ticket} label="Total bookings" value={all.length} tone="accent" />
-        <StatCard icon={Wallet} label="Revenue" value={format(revenue)} tone="success" />
-        <StatCard icon={Clock} label="Pending" value={pending} tone="warning" />
-        <StatCard icon={CheckCircle2} label="Confirmed" value={confirmed} tone="success" />
-        <StatCard icon={XCircle} label="Cancelled" value={cancelled} tone="warning" />
+        <StatCard icon={Users} label={t('admin.overview.totalUsers')} value={userCount.data ?? 0} />
+        <StatCard icon={Ticket} label={t('admin.overview.totalBookings')} value={all.length} tone="accent" />
+        <StatCard icon={Wallet} label={t('admin.overview.revenue')} value={format(revenue)} tone="success" />
+        <StatCard icon={Clock} label={t('admin.overview.pending')} value={pending} tone="warning" />
+        <StatCard icon={CheckCircle2} label={t('admin.overview.confirmed')} value={confirmed} tone="success" />
+        <StatCard icon={XCircle} label={t('admin.overview.cancelled')} value={cancelled} tone="warning" />
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft">
-          <h2 className="mb-4 font-display text-base font-semibold text-ink-950">Bookings by service</h2>
+          <h2 className="mb-4 font-display text-base font-semibold text-ink-950">{t('admin.overview.bookingsByService')}</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={byService} margin={{ left: -20 }}>
@@ -66,10 +75,10 @@ export default function AdminOverviewPage() {
         </div>
 
         <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-soft">
-          <h2 className="mb-4 font-display text-base font-semibold text-ink-950">Bookings by status</h2>
+          <h2 className="mb-4 font-display text-base font-semibold text-ink-950">{t('admin.overview.bookingsByStatus')}</h2>
           <div className="h-64">
             {byStatus.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-sm text-ink-400">No bookings yet</div>
+              <div className="flex h-full items-center justify-center text-sm text-ink-400">{t('dashboard.overview.noBookingsYet')}</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>

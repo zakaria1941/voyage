@@ -1,3 +1,5 @@
+import type { TranslationKey } from '@/i18n';
+
 export type TripType = 'roundtrip' | 'oneway' | 'multicity';
 export type CabinClass = 'economy' | 'premium_economy' | 'business' | 'first';
 
@@ -12,6 +14,14 @@ export const CABIN_LABELS: Record<CabinClass, string> = {
   premium_economy: 'Premium Economy',
   business: 'Business',
   first: 'First',
+};
+
+/** Translation keys for {@link CabinClass} values — use via `t(CABIN_LABEL_KEYS[cabin])` instead of {@link CABIN_LABELS} in user-facing UI. */
+export const CABIN_LABEL_KEYS: Record<CabinClass, TranslationKey> = {
+  economy: 'search.cabinClass.economy',
+  premium_economy: 'search.cabinClass.premiumEconomy',
+  business: 'search.cabinClass.business',
+  first: 'search.cabinClass.first',
 };
 
 export interface FlightSearchParams {

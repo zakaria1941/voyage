@@ -1,20 +1,23 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Luggage, Ticket, Heart, UserRound, Bell, Settings } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import type { TranslationKey } from '@/i18n';
 import { cn } from '@/utils/cn';
 
-const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Overview', icon: LayoutDashboard, end: true },
-  { to: '/dashboard/trips', label: 'My Trips', icon: Luggage, end: false },
-  { to: '/dashboard/bookings', label: 'Bookings', icon: Ticket, end: false },
-  { to: '/dashboard/favorites', label: 'Favorites', icon: Heart, end: false },
-  { to: '/dashboard/notifications', label: 'Notifications', icon: Bell, end: false },
-  { to: '/dashboard/profile', label: 'Profile', icon: UserRound, end: false },
-  { to: '/dashboard/settings', label: 'Settings', icon: Settings, end: false },
+const NAV_ITEMS: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; end: boolean }[] = [
+  { to: '/dashboard', labelKey: 'dashboard.nav.overview', icon: LayoutDashboard, end: true },
+  { to: '/dashboard/trips', labelKey: 'dashboard.nav.myTrips', icon: Luggage, end: false },
+  { to: '/dashboard/bookings', labelKey: 'dashboard.nav.bookings', icon: Ticket, end: false },
+  { to: '/dashboard/favorites', labelKey: 'dashboard.nav.favorites', icon: Heart, end: false },
+  { to: '/dashboard/notifications', labelKey: 'dashboard.nav.notifications', icon: Bell, end: false },
+  { to: '/dashboard/profile', labelKey: 'dashboard.nav.profile', icon: UserRound, end: false },
+  { to: '/dashboard/settings', labelKey: 'dashboard.nav.settings', icon: Settings, end: false },
 ];
 
 export function DashboardSidebar() {
+  const { t } = useLanguage();
   return (
-    <nav aria-label="Dashboard navigation" className="hidden w-60 shrink-0 lg:block">
+    <nav aria-label={t('dashboard.nav.ariaLabel')} className="hidden w-60 shrink-0 lg:block">
       <div className="sticky top-24 flex flex-col gap-1">
         {NAV_ITEMS.map((item) => (
           <NavLink
@@ -29,7 +32,7 @@ export function DashboardSidebar() {
             }
           >
             <item.icon className="size-4.5" />
-            {item.label}
+            {t(item.labelKey)}
           </NavLink>
         ))}
       </div>
@@ -38,8 +41,9 @@ export function DashboardSidebar() {
 }
 
 export function DashboardMobileTabs() {
+  const { t } = useLanguage();
   return (
-    <nav aria-label="Dashboard navigation" className="mb-6 overflow-x-auto lg:hidden">
+    <nav aria-label={t('dashboard.nav.ariaLabel')} className="mb-6 overflow-x-auto lg:hidden">
       <div className="flex w-max gap-1.5 border-b border-ink-100 pb-px">
         {NAV_ITEMS.map((item) => (
           <NavLink
@@ -54,7 +58,7 @@ export function DashboardMobileTabs() {
             }
           >
             <item.icon className="size-4" />
-            {item.label}
+            {t(item.labelKey)}
           </NavLink>
         ))}
       </div>

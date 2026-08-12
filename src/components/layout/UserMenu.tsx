@@ -3,10 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Luggage, Heart, Settings, LogOut, ShieldCheck, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { useLanguage } from '@/context/LanguageContext';
+import type { TranslationKey } from '@/i18n';
 import { cn } from '@/utils/cn';
 
 export function UserMenu({ dark }: { dark?: boolean }) {
   const { profile, isAdmin, logout } = useAuth();
+  const { t } = useLanguage();
   const toast = useToast();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -35,11 +38,11 @@ export function UserMenu({ dark }: { dark?: boolean }) {
     }
   }
 
-  const items = [
-    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/dashboard/trips', label: 'My Trips', icon: Luggage },
-    { to: '/dashboard/favorites', label: 'Favorites', icon: Heart },
-    { to: '/dashboard/settings', label: 'Settings', icon: Settings },
+  const items: { to: string; key: TranslationKey; icon: typeof LayoutDashboard }[] = [
+    { to: '/dashboard', key: 'nav.dashboard', icon: LayoutDashboard },
+    { to: '/dashboard/trips', key: 'nav.myTrips', icon: Luggage },
+    { to: '/dashboard/favorites', key: 'nav.favorites', icon: Heart },
+    { to: '/dashboard/settings', key: 'nav.settings', icon: Settings },
   ];
 
   return (
@@ -82,7 +85,7 @@ export function UserMenu({ dark }: { dark?: boolean }) {
                 className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
               >
                 <item.icon className="size-4 text-ink-400" />
-                {item.label}
+                {t(item.key)}
               </Link>
             ))}
             {isAdmin && (
@@ -92,7 +95,7 @@ export function UserMenu({ dark }: { dark?: boolean }) {
                 className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
               >
                 <ShieldCheck className="size-4" />
-                Admin dashboard
+                {t('nav.adminDashboard')}
               </Link>
             )}
             <div className="my-1 h-px bg-ink-100" />
@@ -102,7 +105,7 @@ export function UserMenu({ dark }: { dark?: boolean }) {
               className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-danger-600 hover:bg-danger-50"
             >
               <LogOut className="size-4" />
-              Sign out
+              {t('nav.signOut')}
             </button>
           </div>
         </Fragment>

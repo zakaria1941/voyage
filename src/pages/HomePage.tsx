@@ -1,49 +1,87 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, BadgePercent, Clock, Sparkles, Star, ArrowRight } from 'lucide-react';
+import { ShieldCheck, BadgePercent, Clock, Sparkles, Star, ArrowRight, MapPin } from 'lucide-react';
 import { SearchWidget } from '@/components/booking/SearchWidget';
 import { CardHoverable } from '@/components/ui/Card';
+import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
+import type { TranslationKey } from '@/i18n';
 
 const DESTINATIONS = [
-  { city: 'Paris', country: 'France', code: 'PAR', seed: 'voyago-paris' },
-  { city: 'Barcelona', country: 'Spain', code: 'BCN', seed: 'voyago-barcelona' },
-  { city: 'Dubai', country: 'UAE', code: 'DXB', seed: 'voyago-dubai' },
-  { city: 'Rome', country: 'Italy', code: 'ROM', seed: 'voyago-rome' },
-  { city: 'Istanbul', country: 'Türkiye', code: 'IST', seed: 'voyago-istanbul' },
-  { city: 'New York', country: 'United States', code: 'NYC', seed: 'voyago-nyc' },
+  {
+    city: 'Paris',
+    country: 'France',
+    code: 'PAR',
+    image:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/La_Tour_Eiffel_vue_de_la_Tour_Saint-Jacques%2C_Paris_ao%C3%BBt_2014_%282%29.jpg/1280px-La_Tour_Eiffel_vue_de_la_Tour_Saint-Jacques%2C_Paris_ao%C3%BBt_2014_%282%29.jpg',
+  },
+  {
+    city: 'Barcelona',
+    country: 'Spain',
+    code: 'BCN',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Evening_light_over_Barcelona.jpg/1280px-Evening_light_over_Barcelona.jpg',
+  },
+  {
+    city: 'Dubai',
+    country: 'UAE',
+    code: 'DXB',
+    image: 'https://upload.wikimedia.org/wikipedia/en/thumb/c/c7/Burj_Khalifa_2021.jpg/1280px-Burj_Khalifa_2021.jpg',
+  },
+  {
+    city: 'Rome',
+    country: 'Italy',
+    code: 'ROM',
+    image:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Trevi_Fountain%2C_Rome%2C_Italy_2_-_May_2007.jpg/1280px-Trevi_Fountain%2C_Rome%2C_Italy_2_-_May_2007.jpg',
+  },
+  {
+    city: 'Istanbul',
+    country: 'Türkiye',
+    code: 'IST',
+    image:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Historical_peninsula_and_modern_skyline_of_Istanbul.jpg/1280px-Historical_peninsula_and_modern_skyline_of_Istanbul.jpg',
+  },
+  {
+    city: 'New York',
+    country: 'United States',
+    code: 'NYC',
+    image:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/View_of_Empire_State_Building_from_Rockefeller_Center_New_York_City_dllu_%28cropped%29.jpg/1280px-View_of_Empire_State_Building_from_Rockefeller_Center_New_York_City_dllu_%28cropped%29.jpg',
+  },
 ];
 
-const TRUST_POINTS = [
-  { icon: ShieldCheck, title: 'Secure by design', text: 'Firebase-backed authentication and encrypted checkout on every booking.' },
-  { icon: BadgePercent, title: 'Transparent pricing', text: 'The price you see is the price you pay — taxes and fees included upfront.' },
-  { icon: Clock, title: 'Free cancellation', text: 'Most flights, stays, and rentals can be cancelled free of charge.' },
-  { icon: Sparkles, title: 'One place, four services', text: 'Flights, hotels, cars, and transfers — planned and booked together.' },
+const TRUST_POINTS: { icon: typeof ShieldCheck; titleKey: TranslationKey; textKey: TranslationKey }[] = [
+  { icon: ShieldCheck, titleKey: 'home.trust.secure.title', textKey: 'home.trust.secure.text' },
+  { icon: BadgePercent, titleKey: 'home.trust.pricing.title', textKey: 'home.trust.pricing.text' },
+  { icon: Clock, titleKey: 'home.trust.cancellation.title', textKey: 'home.trust.cancellation.text' },
+  { icon: Sparkles, titleKey: 'home.trust.allInOne.title', textKey: 'home.trust.allInOne.text' },
 ];
 
-const STEPS = [
-  { step: '01', title: 'Search', text: 'Compare flights, hotels, cars, and transfers side by side in seconds.' },
-  { step: '02', title: 'Book', text: 'Reserve with clear pricing and flexible cancellation — no hidden fees.' },
-  { step: '03', title: 'Travel', text: 'Everything lives in your dashboard: confirmations, trips, and reminders.' },
+const STEPS: { step: string; titleKey: TranslationKey; textKey: TranslationKey }[] = [
+  { step: '01', titleKey: 'home.steps.search.title', textKey: 'home.steps.search.text' },
+  { step: '02', titleKey: 'home.steps.book.title', textKey: 'home.steps.book.text' },
+  { step: '03', titleKey: 'home.steps.travel.title', textKey: 'home.steps.travel.text' },
 ];
 
 export default function HomePage() {
+  const { profile } = useAuth();
+  const { t } = useLanguage();
+
   return (
     <div>
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-950 via-brand-900 to-brand-800 pb-40 pt-28 sm:pb-48 sm:pt-36">
+      <section className="relative -mt-18 overflow-hidden bg-gradient-to-b from-brand-950 via-brand-900 to-brand-800 pb-40 pt-[7.5rem] sm:pb-48 sm:pt-40">
         <HeroDecoration />
 
         <div className="container-page relative">
           <div className="mx-auto max-w-3xl text-center">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white/90 ring-1 ring-white/15 backdrop-blur">
               <Sparkles className="size-3.5 text-accent-300" />
-              Flights · Hotels · Cars · Transfers — all in one place
+              {t('home.badge')}
             </span>
             <h1 className="mt-6 font-display text-4xl font-bold leading-[1.08] text-white sm:text-6xl">
-              Your journey starts here.
+              {t('home.title')}
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-balance text-lg text-white/75">
-              Book flights, hotels, cars, and airport transfers in one place — with transparent pricing and free
-              cancellation on most bookings.
-            </p>
+            <p className="mx-auto mt-5 max-w-xl text-balance text-lg text-white/75">{t('home.subtitle')}</p>
           </div>
         </div>
 
@@ -54,12 +92,12 @@ export default function HomePage() {
 
       <section className="container-page -mt-16 grid grid-cols-1 gap-4 py-12 sm:-mt-20 sm:grid-cols-2 sm:py-16 lg:grid-cols-4">
         {TRUST_POINTS.map((point) => (
-          <div key={point.title} className="rounded-2xl border border-ink-100 bg-white p-6 shadow-soft">
+          <div key={point.titleKey} className="rounded-2xl border border-ink-100 bg-white p-6 shadow-soft">
             <span className="flex size-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
               <point.icon className="size-5" />
             </span>
-            <h3 className="mt-4 font-display text-base font-semibold text-ink-950">{point.title}</h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-ink-500">{point.text}</p>
+            <h3 className="mt-4 font-display text-base font-semibold text-ink-950">{t(point.titleKey)}</h3>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-500">{t(point.textKey)}</p>
           </div>
         ))}
       </section>
@@ -67,29 +105,20 @@ export default function HomePage() {
       <section className="container-page py-12 sm:py-16">
         <div className="mb-8 flex items-end justify-between">
           <div>
-            <h2 className="font-display text-2xl font-bold text-ink-950 sm:text-3xl">Popular destinations</h2>
-            <p className="mt-2 text-ink-500">Handpicked cities travelers are booking right now.</p>
+            <h2 className="font-display text-2xl font-bold text-ink-950 sm:text-3xl">{t('home.destinations.title')}</h2>
+            <p className="mt-2 text-ink-500">{t('home.destinations.subtitle')}</p>
           </div>
           <Link to="/explore" className="hidden items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 sm:inline-flex">
-            Explore all <ArrowRight className="size-4" />
+            {t('home.destinations.exploreAll')} <ArrowRight className="size-4" />
           </Link>
         </div>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           {DESTINATIONS.map((dest) => (
-            <Link
-              key={dest.code}
-              to={`/hotels/results?destination=${encodeURIComponent(dest.city)}`}
-              className="group"
-            >
+            <Link key={dest.code} to={`/hotels/results?destination=${encodeURIComponent(dest.city)}`} className="group">
               <CardHoverable className="overflow-hidden p-0">
                 <div className="aspect-[3/4] w-full overflow-hidden bg-ink-100">
-                  <img
-                    src={`https://picsum.photos/seed/${dest.seed}/400/560`}
-                    alt={`${dest.city}, ${dest.country}`}
-                    loading="lazy"
-                    className="size-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
+                  <DestinationImage src={dest.image} alt={`${dest.city}, ${dest.country}`} />
                 </div>
                 <div className="p-3">
                   <p className="font-display text-sm font-semibold text-ink-950">{dest.city}</p>
@@ -104,44 +133,64 @@ export default function HomePage() {
       <section className="bg-ink-50 py-16 sm:py-20">
         <div className="container-page">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="font-display text-2xl font-bold text-ink-950 sm:text-3xl">How Voyago works</h2>
-            <p className="mt-2 text-ink-500">From search to touchdown, in three simple steps.</p>
+            <h2 className="font-display text-2xl font-bold text-ink-950 sm:text-3xl">{t('home.howItWorks.title')}</h2>
+            <p className="mt-2 text-ink-500">{t('home.howItWorks.subtitle')}</p>
           </div>
           <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {STEPS.map((s) => (
               <div key={s.step} className="relative rounded-2xl bg-white p-7 shadow-soft">
                 <span className="font-display text-4xl font-bold text-brand-100">{s.step}</span>
-                <h3 className="mt-3 font-display text-lg font-semibold text-ink-950">{s.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-ink-500">{s.text}</p>
+                <h3 className="mt-3 font-display text-lg font-semibold text-ink-950">{t(s.titleKey)}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink-500">{t(s.textKey)}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="container-page py-16 sm:py-20">
-        <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-800 to-brand-950 px-6 py-14 text-center sm:px-16">
-          <div className="mx-auto flex max-w-md items-center justify-center gap-1 text-accent-300">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} className="size-4 fill-current" />
-            ))}
+      {!profile && (
+        <section className="container-page py-16 sm:py-20">
+          <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-800 to-brand-950 px-6 py-14 text-center sm:px-16">
+            <div className="mx-auto flex max-w-md items-center justify-center gap-1 text-accent-300">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className="size-4 fill-current" />
+              ))}
+            </div>
+            <h2 className="mt-4 font-display text-2xl font-bold text-white sm:text-3xl">{t('home.cta.title')}</h2>
+            <p className="mx-auto mt-3 max-w-md text-white/70">{t('home.cta.text')}</p>
+            <Link
+              to="/register"
+              className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-brand-800 transition-transform hover:scale-[1.02]"
+            >
+              {t('home.cta.button')}
+              <ArrowRight className="size-4" />
+            </Link>
           </div>
-          <h2 className="mt-4 font-display text-2xl font-bold text-white sm:text-3xl">
-            Join travelers planning smarter trips
-          </h2>
-          <p className="mx-auto mt-3 max-w-md text-white/70">
-            Create a free Voyago account to save favorites, track trips, and check out faster.
-          </p>
-          <Link
-            to="/register"
-            className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-brand-800 transition-transform hover:scale-[1.02]"
-          >
-            Create your account
-            <ArrowRight className="size-4" />
-          </Link>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
+  );
+}
+
+function DestinationImage({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <div className="flex size-full items-center justify-center bg-gradient-to-br from-brand-100 to-brand-200 text-brand-400">
+        <MapPin className="size-8" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="size-full object-cover transition-transform duration-500 group-hover:scale-110"
+    />
   );
 }
 

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { translate, type TranslationKey } from '@/i18n';
 
 export type LanguageCode = 'en' | 'fr' | 'es' | 'ar';
 
@@ -9,9 +10,14 @@ export const LANGUAGES: { code: LanguageCode; label: string; nativeLabel: string
   { code: 'ar', label: 'Arabic', nativeLabel: 'العربية' },
 ];
 
+export const RTL_LANGUAGES: readonly LanguageCode[] = ['ar'];
+
 interface LanguageContextValue {
   language: LanguageCode;
   setLanguage: (code: LanguageCode) => void;
+  isRtl: boolean;
+  /** Translates `key` into the active language, with optional {param} interpolation. See src/i18n/en.ts for available keys. */
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
@@ -23,13 +29,23 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return (window.localStorage.getItem(STORAGE_KEY) as LanguageCode) || 'en';
   });
 
+  const isRtl = RTL_LANGUAGES.includes(language);
+
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, language);
     document.documentElement.lang = language;
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-  }, [language]);
+    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+  }, [language, isRtl]);
 
-  const value = useMemo(() => ({ language, setLanguage: setLanguageState }), [language]);
+  const value = useMemo<LanguageContextValue>(
+    () => ({
+      language,
+      setLanguage: setLanguageState,
+      isRtl,
+      t: (key, params) => translate(language, key, params),
+    }),
+    [language, isRtl],
+  );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
