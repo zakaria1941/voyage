@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { SlidersHorizontal, PlaneTakeoff } from 'lucide-react';
+import { isSameDay, parseISO } from 'date-fns';
+import { SlidersHorizontal, PlaneTakeoff, Info } from 'lucide-react';
 import { FlightCard } from '@/components/flight/FlightCard';
 import { FlightCardSkeleton } from '@/components/flight/FlightCardSkeleton';
 import { FlightFilters } from '@/components/flight/FlightFilters';
@@ -10,6 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Badge } from '@/components/ui/Badge';
 import { useAsync } from '@/hooks/useAsync';
+import { useLanguage } from '@/context/LanguageContext';
 import { searchFlights } from '@/services/flightService';
 import type { Flight } from '@/types/flight';
 import type { CabinClass, FlightSearchParams } from '@/types/search';
@@ -25,15 +27,14 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'earliest', label: 'Earliest departure' },
 ];
 
+/** Origin/destination are optional — a route search only requires the date, which the form always supplies a default for. */
 function parseParams(searchParams: URLSearchParams): FlightSearchParams | null {
-  const origin = searchParams.get('origin');
-  const destination = searchParams.get('destination');
   const departureDate = searchParams.get('departureDate');
-  if (!origin || !destination || !departureDate) return null;
+  if (!departureDate) return null;
   return {
     tripType: (searchParams.get('tripType') as FlightSearchParams['tripType']) || 'oneway',
-    origin,
-    destination,
+    origin: searchParams.get('origin') || '',
+    destination: searchParams.get('destination') || '',
     departureDate,
     returnDate: searchParams.get('returnDate') || undefined,
     adults: Number(searchParams.get('adults') || 1),
@@ -79,6 +80,7 @@ function applyFiltersAndSort(flights: Flight[], cabin: CabinClass, filters: Flig
 export default function FlightResultsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const params = useMemo(() => parseParams(searchParams), [searchParams]);
 
   const [step, setStep] = useState<'outbound' | 'return'>('outbound');
@@ -88,15 +90,15 @@ export default function FlightResultsPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const outbound = useAsync(
-    () => (params ? searchFlights({ origin: params.origin, destination: params.destination, departureDate: params.departureDate }) : Promise.resolve([])),
-    [params?.origin, params?.destination, params?.departureDate],
+    () => (params ? searchFlights({ origin: params.origin, destination: params.destination }) : Promise.resolve([])),
+    [params?.origin, params?.destination],
   );
 
   const isReturnLeg = step === 'return' && params?.tripType === 'roundtrip';
   const returnLeg = useAsync(
     () =>
       params && params.tripType === 'roundtrip' && params.returnDate
-        ? searchFlights({ origin: params.destination, destination: params.origin, departureDate: params.returnDate })
+        ? searchFlights({ origin: params.destination, destination: params.origin })
         : Promise.resolve([]),
     [params?.tripType, params?.origin, params?.destination, params?.returnDate],
   );
@@ -110,7 +112,17 @@ export default function FlightResultsPage() {
   }
 
   const active = isReturnLeg ? returnLeg : outbound;
-  const activeFlights = active.data ?? [];
+  const routeFlights = active.data ?? [];
+
+  // The departure date is a soft filter, not a hard requirement: prefer
+  // flights on the exact day, but if that's empty while the route itself
+  // has flights on other days, fall back to showing the whole route rather
+  // than an empty page — small seeded datasets rarely land on any one date.
+  const relevantDate = isReturnLeg ? params.returnDate : params.departureDate;
+  const exactDateFlights = relevantDate ? routeFlights.filter((f) => isSameDay(new Date(f.departureTime), parseISO(relevantDate))) : routeFlights;
+  const usingDateFallback = routeFlights.length > 0 && exactDateFlights.length === 0;
+  const activeFlights = usingDateFallback ? routeFlights : exactDateFlights;
+
   const filteredSorted = applyFiltersAndSort(activeFlights, params.cabin, filters, sort);
   const priceValues = activeFlights.map((f) => f.fares[params.cabin]?.price ?? 0).filter(Boolean);
   const priceBounds = { min: Math.min(...(priceValues.length ? priceValues : [0])), max: Math.max(...(priceValues.length ? priceValues : [0])) };
@@ -135,9 +147,16 @@ export default function FlightResultsPage() {
     navigate(`/flights/${outboundId}?${qs.toString()}`);
   }
 
+  function routeLabel(from: string, to: string): string {
+    if (from && to) return `${from} → ${to}`;
+    if (from) return t('search.flights.fromOnly', { origin: from });
+    if (to) return t('search.flights.toOnly', { destination: to });
+    return t('search.flights.allRoutes');
+  }
   const legLabel = isReturnLeg
-    ? `${params.destination} → ${params.origin} · ${formatDateLong(params.returnDate!)}`
-    : `${params.origin} → ${params.destination} · ${formatDateLong(params.departureDate)}`;
+    ? `${routeLabel(params.destination, params.origin)} · ${formatDateLong(params.returnDate!)}`
+    : `${routeLabel(params.origin, params.destination)} · ${formatDateLong(params.departureDate)}`;
+  const resultsCountLabel = filteredSorted.length === 1 ? t('search.results.flightFound', { count: 1 }) : t('search.results.flightsFound', { count: filteredSorted.length });
 
   return (
     <div className="container-page py-8">
@@ -181,6 +200,13 @@ export default function FlightResultsPage() {
         </aside>
 
         <div>
+          {!active.loading && !active.error && usingDateFallback && (
+            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-accent-200 bg-accent-50 px-3.5 py-3 text-sm text-accent-900">
+              <Info className="mt-0.5 size-4 shrink-0" />
+              <span>{t('search.flights.noExactDateFallback', { date: formatDateLong(relevantDate!) })}</span>
+            </div>
+          )}
+
           <div className="mb-4 flex items-center justify-between gap-3">
             <SortTabs options={SORT_OPTIONS} value={sort} onChange={setSort} />
             <button
@@ -192,6 +218,10 @@ export default function FlightResultsPage() {
               Filters
             </button>
           </div>
+
+          {!active.loading && !active.error && (
+            <p className="mb-3 text-sm font-medium text-ink-600">{resultsCountLabel}</p>
+          )}
 
           {active.loading && (
             <div className="flex flex-col gap-4">

@@ -29,10 +29,7 @@ export function CarSearchForm({ initial, onSearch }: CarSearchFormProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!pickupLocation.trim()) {
-      setError(t('search.cars.errorMissingPickup'));
-      return;
-    }
+    // Pick-up location is optional — an empty search browses the full public catalog.
     if (!sameDropoff && !dropoffLocation.trim()) {
       setError(t('search.cars.errorMissingDropoff'));
       return;

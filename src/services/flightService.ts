@@ -1,34 +1,33 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, updateDoc, where, type QueryConstraint } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Flight, FlightInput } from '@/types/flight';
-import { dayRangeMillis, mapDoc, mapDocs } from './firestoreUtils';
+import { mapDoc, mapDocs } from './firestoreUtils';
 
 const flightsCol = () => collection(db, 'flights');
 
 export interface FlightSearchQuery {
-  origin: string;
-  destination: string;
-  departureDate: string;
+  /** Airport/city code. Omit or pass an empty string to match any origin. */
+  origin?: string;
+  /** Airport/city code. Omit or pass an empty string to match any destination. */
+  destination?: string;
 }
 
 /**
- * Narrows via an indexed equality+range query (origin, destination, date
- * range — see firestore.indexes.json), then leaves sort/secondary filtering
- * (stops, airline, time-of-day, cabin) to the UI layer, since a single
- * route/day in this demo dataset returns only a handful of documents.
+ * Route matching is forgiving by design: origin and destination are each
+ * independently optional, so "From only", "To only", and "neither" all
+ * return real results instead of an empty page. The departure date is
+ * deliberately NOT part of this query — with a small seeded dataset,
+ * requiring an exact date match hides real inventory for no reason. Callers
+ * (FlightResultsPage) treat the date as a soft, client-side filter with a
+ * fallback to the full route when no flights land on the exact day.
  */
-export async function searchFlights({ origin, destination, departureDate }: FlightSearchQuery): Promise<Flight[]> {
-  const { start, end } = dayRangeMillis(departureDate);
-  const snap = await getDocs(
-    query(
-      flightsCol(),
-      where('originCode', '==', origin.toUpperCase()),
-      where('destinationCode', '==', destination.toUpperCase()),
-      where('departureTime', '>=', start),
-      where('departureTime', '<=', end),
-      orderBy('departureTime'),
-    ),
-  );
+export async function searchFlights({ origin, destination }: FlightSearchQuery): Promise<Flight[]> {
+  const constraints: QueryConstraint[] = [];
+  if (origin?.trim()) constraints.push(where('originCode', '==', origin.trim().toUpperCase()));
+  if (destination?.trim()) constraints.push(where('destinationCode', '==', destination.trim().toUpperCase()));
+  constraints.push(orderBy('departureTime'));
+
+  const snap = await getDocs(query(flightsCol(), ...constraints));
   return mapDocs<Flight>(snap);
 }
 

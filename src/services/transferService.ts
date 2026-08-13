@@ -6,14 +6,32 @@ import { mapDoc, mapDocs } from './firestoreUtils';
 const transfersCol = () => collection(db, 'transfers');
 
 export interface TransferSearchQuery {
-  airport: string;
+  /** Pickup airport code, e.g. "CDG". Omit or pass an empty string to match any pickup airport. */
+  airport?: string;
+  /**
+   * Free-text drop-off (city, address, or airport name/code). Transfers
+   * don't store a separate "dropoff" field — a transfer's `city` is the
+   * city its airport serves, which is what a drop-off address is really
+   * asking about, so this matches against `city`/`airportName`/`airportCode`.
+   * Case-insensitive substring match, applied client-side (see searchCars
+   * for why: no native Firestore substring/OR-field query).
+   */
+  destination?: string;
 }
 
-export async function searchTransfers({ airport }: TransferSearchQuery): Promise<Transfer[]> {
-  const code = airport.trim().toUpperCase();
-  if (!code) return [];
-  const snap = await getDocs(query(transfersCol(), where('airportCode', '==', code), orderBy('pricePerTrip')));
-  return mapDocs<Transfer>(snap);
+/** Empty/omitted `airport` returns every transfer rather than nothing — browsing without a specific airport is a valid search. */
+export async function searchTransfers({ airport, destination }: TransferSearchQuery): Promise<Transfer[]> {
+  const code = airport?.trim().toUpperCase();
+  const snap = code
+    ? await getDocs(query(transfersCol(), where('airportCode', '==', code), orderBy('pricePerTrip')))
+    : await getDocs(query(transfersCol(), orderBy('pricePerTrip')));
+  const results = mapDocs<Transfer>(snap);
+
+  const dest = destination?.trim().toLowerCase();
+  if (!dest) return results;
+  return results.filter(
+    (t) => t.city.toLowerCase().includes(dest) || t.airportName.toLowerCase().includes(dest) || t.airportCode.toLowerCase() === dest,
+  );
 }
 
 export async function listTransfers(max = 100): Promise<Transfer[]> {

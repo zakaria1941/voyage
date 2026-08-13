@@ -9,6 +9,7 @@ import { SortTabs } from '@/components/booking/SortTabs';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useAsync } from '@/hooks/useAsync';
+import { useLanguage } from '@/context/LanguageContext';
 import { searchCars } from '@/services/carService';
 import type { CarSearchParams } from '@/types/search';
 import { DEFAULT_CAR_FILTERS, type CarFiltersState } from '@/types/carFilters';
@@ -21,11 +22,12 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'seats', label: 'Most seats' },
 ];
 
+/** Pick-up location is optional — an empty search browses the full public catalog. */
 function parseParams(searchParams: URLSearchParams): CarSearchParams | null {
-  const pickupLocation = searchParams.get('pickupLocation');
   const pickupDate = searchParams.get('pickupDate');
   const dropoffDate = searchParams.get('dropoffDate');
-  if (!pickupLocation || !pickupDate || !dropoffDate) return null;
+  if (!pickupDate || !dropoffDate) return null;
+  const pickupLocation = searchParams.get('pickupLocation') || '';
   return {
     pickupLocation,
     dropoffLocation: searchParams.get('dropoffLocation') || pickupLocation,
@@ -40,6 +42,7 @@ function parseParams(searchParams: URLSearchParams): CarSearchParams | null {
 
 export default function CarResultsPage() {
   const [searchParams] = useSearchParams();
+  const { t } = useLanguage();
   const params = useMemo(() => parseParams(searchParams), [searchParams]);
 
   const [sort, setSort] = useState<SortOption>('recommended');
@@ -90,7 +93,7 @@ export default function CarResultsPage() {
     <div className="container-page py-8">
       <div className="mb-6 rounded-2xl border border-ink-100 bg-white p-4 shadow-soft sm:p-5">
         <div>
-          <p className="font-display text-lg font-bold text-ink-950">{params.pickupLocation}</p>
+          <p className="font-display text-lg font-bold text-ink-950">{params.pickupLocation || t('search.cars.allCars')}</p>
           <p className="mt-0.5 text-sm text-ink-500">
             {days} day{days > 1 ? 's' : ''} · Pickup {params.pickupDate} · Driver age {params.driverAge}
           </p>
@@ -119,6 +122,12 @@ export default function CarResultsPage() {
               Filters
             </button>
           </div>
+
+          {!cars.loading && !cars.error && (
+            <p className="mb-3 text-sm font-medium text-ink-600">
+              {filtered.length === 1 ? t('search.results.carFound', { count: 1 }) : t('search.results.carsFound', { count: filtered.length })}
+            </p>
+          )}
 
           {cars.loading && (
             <div className="flex flex-col gap-4">

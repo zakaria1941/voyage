@@ -40,11 +40,10 @@ export function FlightSearchForm({ initial, onSearch, compact }: FlightSearchFor
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!origin.trim() || !destination.trim()) {
-      setError(t('search.flights.errorMissingCities'));
-      return;
-    }
-    if (origin.trim().toLowerCase() === destination.trim().toLowerCase()) {
+    // Both fields are optional — an empty From/To broadens the search
+    // (departing anywhere / arriving anywhere / browse everything) rather
+    // than blocking submission. Only reject a same non-empty origin/destination.
+    if (origin.trim() && destination.trim() && origin.trim().toLowerCase() === destination.trim().toLowerCase()) {
       setError(t('search.flights.errorSameCity'));
       return;
     }

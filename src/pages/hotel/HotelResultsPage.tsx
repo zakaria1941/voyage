@@ -9,6 +9,7 @@ import { SortTabs } from '@/components/booking/SortTabs';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useAsync } from '@/hooks/useAsync';
+import { useLanguage } from '@/context/LanguageContext';
 import { searchHotels } from '@/services/hotelService';
 import type { HotelSearchParams } from '@/types/search';
 import { DEFAULT_HOTEL_FILTERS, type HotelFiltersState } from '@/types/hotelFilters';
@@ -21,13 +22,13 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'rating', label: 'Rating' },
 ];
 
+/** Destination is optional — an empty search browses the full public catalog. */
 function parseParams(searchParams: URLSearchParams): HotelSearchParams | null {
-  const destination = searchParams.get('destination');
   const checkIn = searchParams.get('checkIn');
   const checkOut = searchParams.get('checkOut');
-  if (!destination || !checkIn || !checkOut) return null;
+  if (!checkIn || !checkOut) return null;
   return {
-    destination,
+    destination: searchParams.get('destination') || '',
     checkIn,
     checkOut,
     rooms: Number(searchParams.get('rooms') || 1),
@@ -38,6 +39,7 @@ function parseParams(searchParams: URLSearchParams): HotelSearchParams | null {
 
 export default function HotelResultsPage() {
   const [searchParams] = useSearchParams();
+  const { t } = useLanguage();
   const params = useMemo(() => parseParams(searchParams), [searchParams]);
 
   const [sort, setSort] = useState<SortOption>('recommended');
@@ -87,7 +89,7 @@ export default function HotelResultsPage() {
     <div className="container-page py-8">
       <div className="mb-6 rounded-2xl border border-ink-100 bg-white p-4 shadow-soft sm:p-5">
         <div>
-          <p className="font-display text-lg font-bold text-ink-950">{params.destination}</p>
+          <p className="font-display text-lg font-bold text-ink-950">{params.destination || t('search.hotels.allDestinations')}</p>
           <p className="mt-0.5 text-sm text-ink-500">
             {nights} night{nights !== 1 ? 's' : ''} · {params.rooms} room{params.rooms > 1 ? 's' : ''} · {params.adults + params.children} guests
           </p>
@@ -116,6 +118,12 @@ export default function HotelResultsPage() {
               Filters
             </button>
           </div>
+
+          {!hotels.loading && !hotels.error && (
+            <p className="mb-3 text-sm font-medium text-ink-600">
+              {filtered.length === 1 ? t('search.results.hotelFound', { count: 1 }) : t('search.results.hotelsFound', { count: filtered.length })}
+            </p>
+          )}
 
           {hotels.loading && (
             <div className="flex flex-col gap-4">

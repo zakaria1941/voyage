@@ -6,16 +6,46 @@ import { mapDoc, mapDocs } from './firestoreUtils';
 const carsCol = () => collection(db, 'cars');
 
 export interface CarSearchQuery {
-  pickupLocation: string;
+  /**
+   * Free text: a pickup city ("Paris"), or car info (make/model/category,
+   * e.g. "Toyota", "SUV"). Case-insensitive, matches partial words. Omit or
+   * pass an empty string to return the full public catalog.
+   */
+  pickupLocation?: string;
   sort?: 'price' | 'seats';
 }
 
+/**
+ * Two-tier lookup: first tries an indexed exact-city match (the common,
+ * fast case). If that finds nothing — because the term isn't a city at all,
+ * e.g. "Toyota" or "SUV", or is a partial word like "toy" — falls back to
+ * fetching the catalog and matching the term against city/make/model/
+ * category client-side. Firestore has no native substring/OR-across-fields
+ * query, and at this catalog's real-world size (dozens of cars, not
+ * millions) filtering the already-fetched list in memory is simpler and
+ * more correct than trying to force it through `where()` clauses.
+ */
 export async function searchCars({ pickupLocation, sort = 'price' }: CarSearchQuery): Promise<Car[]> {
-  const citySearch = pickupLocation.trim().toLowerCase();
-  if (!citySearch) return [];
   const field = sort === 'seats' ? 'seats' : 'pricePerDay';
-  const snap = await getDocs(query(carsCol(), where('pickupCitySearch', '==', citySearch), orderBy(field)));
-  return mapDocs<Car>(snap);
+  const term = pickupLocation?.trim().toLowerCase();
+
+  if (!term) {
+    const snap = await getDocs(query(carsCol(), orderBy(field)));
+    return mapDocs<Car>(snap);
+  }
+
+  const citySnap = await getDocs(query(carsCol(), where('pickupCitySearch', '==', term), orderBy(field)));
+  const cityMatches = mapDocs<Car>(citySnap);
+  if (cityMatches.length > 0) return cityMatches;
+
+  const allSnap = await getDocs(query(carsCol(), orderBy(field)));
+  return mapDocs<Car>(allSnap).filter(
+    (c) =>
+      c.pickupCity.toLowerCase().includes(term) ||
+      c.make.toLowerCase().includes(term) ||
+      c.model.toLowerCase().includes(term) ||
+      c.category.toLowerCase().includes(term),
+  );
 }
 
 export async function listCars(max = 100): Promise<Car[]> {

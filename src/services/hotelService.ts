@@ -7,16 +7,19 @@ const hotelsCol = () => collection(db, 'hotels');
 const roomsCol = (hotelId: string) => collection(db, 'hotels', hotelId, 'rooms');
 
 export interface HotelSearchQuery {
-  destination: string;
+  /** City name, case-insensitive. Omit or pass an empty string to match every destination. */
+  destination?: string;
   sort?: 'price' | 'rating';
 }
 
+/** Empty/omitted `destination` returns the full public catalog rather than nothing — browsing without typing a city is a valid search. */
 export async function searchHotels({ destination, sort = 'price' }: HotelSearchQuery): Promise<Hotel[]> {
-  const citySearch = destination.trim().toLowerCase();
-  if (!citySearch) return [];
+  const citySearch = destination?.trim().toLowerCase();
   const field = sort === 'rating' ? 'reviewScore' : 'pricePerNight';
   const dir = sort === 'rating' ? 'desc' : 'asc';
-  const snap = await getDocs(query(hotelsCol(), where('citySearch', '==', citySearch), orderBy(field, dir)));
+  const snap = citySearch
+    ? await getDocs(query(hotelsCol(), where('citySearch', '==', citySearch), orderBy(field, dir)))
+    : await getDocs(query(hotelsCol(), orderBy(field, dir)));
   return mapDocs<Hotel>(snap);
 }
 

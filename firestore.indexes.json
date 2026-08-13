@@ -10,6 +10,22 @@
       ]
     },
     {
+      "collectionGroup": "flights",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "originCode", "order": "ASCENDING" },
+        { "fieldPath": "departureTime", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "flights",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "destinationCode", "order": "ASCENDING" },
+        { "fieldPath": "departureTime", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "hotels",
       "queryScope": "COLLECTION",
       "fields": [

@@ -24,16 +24,11 @@ export function TransferSearchForm({ initial, onSearch }: TransferSearchFormProp
   const [time, setTime] = useState(initial?.time ?? '14:00');
   const [passengers, setPassengers] = useState(initial?.passengers ?? 2);
   const [luggage, setLuggage] = useState(initial?.luggage ?? 2);
-  const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!airport.trim() || !destination.trim()) {
-      setError(t('search.transfers.errorMissingFields'));
-      return;
-    }
-    setError(null);
-
+    // Pickup airport and drop-off are each optional — either one alone, or
+    // neither, still runs a valid search (see TransferResultsPage/transferService).
     const params: TransferSearchParams = { airport: airport.trim(), destination: destination.trim(), date, time, passengers, luggage, vehicleType: 'any' };
     if (onSearch) {
       onSearch(params);
@@ -96,11 +91,6 @@ export function TransferSearchForm({ initial, onSearch }: TransferSearchFormProp
           </Button>
         </div>
       </div>
-      {error && (
-        <p role="alert" className="mt-3 text-sm font-medium text-danger-600">
-          {error}
-        </p>
-      )}
     </form>
   );
 }

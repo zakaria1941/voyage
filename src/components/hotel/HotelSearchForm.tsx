@@ -28,10 +28,7 @@ export function HotelSearchForm({ initial, onSearch }: HotelSearchFormProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!destination.trim()) {
-      setError(t('search.hotels.errorMissingDestination'));
-      return;
-    }
+    // Destination is optional — an empty search browses the full public catalog.
     if (checkOut <= checkIn) {
       setError(t('search.hotels.errorCheckoutBeforeCheckin'));
       return;
